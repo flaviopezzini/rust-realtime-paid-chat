@@ -1,5 +1,5 @@
 [package]
-name = "example-chat"
+name = "vop_rust"
 version = "0.1.0"
 edition = "2021"
 publish = false
