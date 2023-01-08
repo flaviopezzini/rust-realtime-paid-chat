@@ -30,7 +30,7 @@ async fn main() {
         .route("/websocket", get(websocket_handler))
         .with_state(app_state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 9000));
     tracing::debug!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -40,5 +40,5 @@ async fn main() {
 
 // Include utf-8 file at **compile** time.
 async fn index() -> Html<&'static str> {
-    Html(std::include_str!("../../frontend/chat.html"))
+    Html(std::include_str!("../../web/public/index.html"))
 }

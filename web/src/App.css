@@ -37,21 +37,3 @@
   }
 }
 
-.user-name {
-  display:block;
-  width:100px;
-  box-sizing: border-box
-}
-
-.chat-area {
-  display:block;
-  width:600px;
-  height:400px;
-  box-sizing: border-box
-}
-
-.new-message-input {
-  display:block;
-  width:600px;
-  box-sizing: border-box
-}
