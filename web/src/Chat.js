@@ -1,7 +1,6 @@
-import logo from './logo.svg';
 import './Chat.css';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 
 import useWebSocket from 'react-use-websocket';
 
@@ -34,7 +33,7 @@ function Chat() {
   });
 
   let newMessageOnBlur = function(e) {
-    if (e.key == "Enter") {
+    if (e.key === "Enter") {
       sendMessage(newMessageText);
       setNewMessageText()
       setNewMessageText((prev) => "");
@@ -45,13 +44,19 @@ function Chat() {
     <div className="Chat">
       <header className="Chat-header">
         <input id="username" className="user-name" type="text" placeholder="username"
-          value={username} defaultValue="" />
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
         <button id="join-chat" type="button">Join Chat</button>
         <textarea id="chat" className="chat-area" cols="30" rows="10"
           value={messageHistory}
+          onChange={(e) => setMessageHistory(e.target.value)}
         ></textarea>
         <input id="input" className="new-message-input" type="text" placeholder="chat"
-           onBlur={newMessageOnBlur} value={newMessageText} />
+           onBlur={newMessageOnBlur}
+           value={newMessageText}
+           onChange={(e) => setNewMessageText(e.target.value)}
+         />
       </header>
     </div>
   );
