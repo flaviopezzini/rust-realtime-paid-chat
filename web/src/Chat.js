@@ -2,42 +2,15 @@ import './Chat.css';
 
 import React, { useState } from 'react';
 
-import useWebSocket from 'react-use-websocket';
+import OpenChat from './OpenChat';
 
 function Chat() {
 
   const [username, setUsername] = useState('');
-  const [messageHistory, setMessageHistory] = useState('');
-  const [newMessageText, setNewMessageText] = useState('');
+  const [showChat, setShowChat] = useState(false);
 
-  const socketUrl = 'ws://localhost:9000/websocket';
-
-  const {
-    sendMessage,
-    sendJsonMessage,
-    lastMessage,
-    lastJsonMessage,
-    readyState,
-    getWebSocket,
-  } = useWebSocket(socketUrl, {
-    onOpen: () => {
-      console.log('opened');
-      sendMessage(username);
-    },
-    onMessage: (e) => {
-      console.log('event: ' + JSON.stringify(e));
-      setMessageHistory((prev) => prev.concat(e.data+"\r\n"));
-    },
-    //Will attempt to reconnect on all close events, such as server shutting down
-    shouldReconnect: (closeEvent) => true,
-  });
-
-  let newMessageOnBlur = function(e) {
-    if (e.key === "Enter") {
-      sendMessage(newMessageText);
-      setNewMessageText()
-      setNewMessageText((prev) => "");
-    }
+  let joinChat = function(e) {
+    setShowChat(() => true);
   }
 
   return (
@@ -47,16 +20,13 @@ function Chat() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
-        <button id="join-chat" type="button">Join Chat</button>
-        <textarea id="chat" className="chat-area" cols="30" rows="10"
-          value={messageHistory}
-          onChange={(e) => setMessageHistory(e.target.value)}
-        ></textarea>
-        <input id="input" className="new-message-input" type="text" placeholder="chat"
-           onBlur={newMessageOnBlur}
-           value={newMessageText}
-           onChange={(e) => setNewMessageText(e.target.value)}
-         />
+        <button
+          id="join-chat"
+          type="button"
+          onClick={joinChat}
+        >Join Chat</button>
+
+        {showChat && <OpenChat username={username}></OpenChat>}
       </header>
     </div>
   );
