@@ -1,6 +1,6 @@
 import './Chat.css';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import OpenChat from './OpenChat';
 
@@ -9,7 +9,7 @@ function Chat() {
   const [username, setUsername] = useState('');
   const [showChat, setShowChat] = useState(false);
 
-  let joinChat = function(e) {
+  let joinChat = function() {
     setShowChat(() => true);
   }
 
