@@ -34,17 +34,17 @@ function OpenChat(props) {
     shouldReconnect: (closeEvent) => true,
   });
 
-  var newMessageOnChange = function(e) {
-    var key = e.nativeEvent.data;
-    console.log(key);
-    if (key === "Enter") {
+  const handleChange = (event) => {
+    setNewMessageText(event.target.value);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
       console.log("New message is : " + newMessageText);
       sendMessage(newMessageText);
       setNewMessageText((prev) => "");
-    } else {
-      setNewMessageText((prev) => prev + key)
     }
-  }
+  };
 
   return (
     <div className="OpenChat">
@@ -55,7 +55,8 @@ function OpenChat(props) {
         ></textarea>
         <input id="input" className="new-message-input" type="text" placeholder="chat"
            value={newMessageText}
-           onChange={newMessageOnChange}
+           onChange={handleChange}
+           onKeyDown={handleKeyDown}
          />
       </header>
     </div>
