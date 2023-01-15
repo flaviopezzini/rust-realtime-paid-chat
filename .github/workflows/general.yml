@@ -78,21 +78,3 @@ jobs:
         run: |
           cargo clippy -- -D warnings
 
-  coverage:
-    defaults:
-      run:
-        working-directory: backend
-    name: Code coverage
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - name: Run cargo-tarpaulin
-        run: |
-          cargo tarpaulin --ignore-tests --avoid-cfg-tarpaulin
