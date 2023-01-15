@@ -45,8 +45,15 @@ jobs:
 
       - name: Run cargo test
         run: |
+          echo "listing"
+          ls -la
+          echo "listing parent"
+          ls -la ..
+          echo "current folder"
           pwd
+          echo "into backend"
           cd backend
+          echo "cargo test"
           cargo test
 
   fmt:
