@@ -6,6 +6,9 @@ on:
       - '**/Cargo.lock'
 jobs:
   security_audit:
+    defaults:
+      run:
+        working-directory: backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
