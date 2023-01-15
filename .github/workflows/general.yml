@@ -55,15 +55,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - name: Run cargo fmt
+        run: |
+          cargo fmt --all -- --check
 
   clippy:
     defaults:
@@ -81,10 +75,8 @@ jobs:
           components: clippy
           override: true
       - name: Run clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: -- -D warnings
+        run: |
+          cargo clippy -- -D warnings
 
   coverage:
     defaults:
@@ -102,6 +94,5 @@ jobs:
           toolchain: stable
           override: true
       - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
-        with:
-          args: '--ignore-tests --avoid-cfg-tarpaulin'
+        run: |
+          cargo tarpaulin --ignore-tests --avoid-cfg-tarpaulin
