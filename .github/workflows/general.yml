@@ -12,10 +12,6 @@ on:
     branches:
       - main
       
-defaults:
-  run:
-    working-directory: backend      
-
 env:
   CARGO_TERM_COLOR: always
   
@@ -48,10 +44,9 @@ jobs:
           override: true
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-        run: cd backend  
+        run: | 
+          cd backend
+          cargo test
 
   fmt:
     defaults:
