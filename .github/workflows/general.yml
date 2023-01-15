@@ -44,7 +44,8 @@ jobs:
           override: true
 
       - name: Run cargo test
-        run: | 
+        run: |
+          pwd
           cd backend
           cargo test
 
