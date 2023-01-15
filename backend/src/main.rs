@@ -1,14 +1,7 @@
 mod chat;
 
-use axum::{
-    response::{Html},
-    routing::get,
-    Router,
-};
-use std::{
-    net::SocketAddr,
-    sync::{Arc},
-};
+use axum::{response::Html, routing::get, Router};
+use std::{net::SocketAddr, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::chat::*;

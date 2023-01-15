@@ -3,7 +3,7 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
     },
-    response::{IntoResponse},
+    response::IntoResponse,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use std::{
