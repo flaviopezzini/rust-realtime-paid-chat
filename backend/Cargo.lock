@@ -1342,6 +1342,7 @@ dependencies = [
  "hyper",
  "reqwest",
  "tokio",
+ "tokio-tungstenite",
  "tower",
  "tracing",
  "tracing-subscriber",

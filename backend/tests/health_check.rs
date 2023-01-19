@@ -1,10 +1,8 @@
-use std::net::{SocketAddr, TcpListener};
-
-use axum::Router;
+mod spawn_app;
 
 #[tokio::test]
 async fn health_check_works() {
-    let addr = spawn_app().await;
+    let addr = spawn_app::spawn_app().await;
 
     let client = reqwest::Client::new();
 
@@ -16,20 +14,4 @@ async fn health_check_works() {
 
     assert!(response.status().is_success());
     assert_eq!(Some(0), response.content_length());
-}
-
-async fn spawn_app() -> std::net::SocketAddr {
-    let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>().unwrap()).unwrap();
-    let addr = listener.local_addr().unwrap();
-
-    let app: Router = vop_rust::run();
-
-    tokio::spawn(async move {
-        axum::Server::from_tcp(listener)
-            .unwrap()
-            .serve(app.into_make_service())
-            .await
-            .unwrap();
-    });
-    addr
 }

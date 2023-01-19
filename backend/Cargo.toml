@@ -20,6 +20,7 @@ tokio = { version = "1.23.1", features = ["full"] }
 tower = { version = "0.4", features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio-tungstenite = "0.17"
 
 [dev-dependencies]
 reqwest = "0.11"
