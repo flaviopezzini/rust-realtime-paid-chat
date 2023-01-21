@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use std::env;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -12,7 +13,12 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 9000));
+    let port = env::var("SERVER_PORT").expect("Environment variable SERVER_PORT not set");
+    let port = port
+        .parse::<u16>()
+        .expect("Environment variable SERVER_PORT must be a valid number");
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
     tracing::debug!("listening on {}", addr);
 
     let app = vop_rust::run();
