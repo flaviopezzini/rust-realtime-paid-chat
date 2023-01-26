@@ -7,6 +7,7 @@ import OpenChat from './OpenChat';
 function Chat() {
 
   const [username, setUsername] = useState('');
+  const [userType, setUserType] = useState('CUSTOMER');
   const [showChat, setShowChat] = useState(false);
 
   let joinChat = function() {
@@ -20,13 +21,21 @@ function Chat() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
+        <input id="customer" name="user_type" type="radio" value="CUSTOMER"
+               onChange={(e) => setUserType(e.target.value)}
+        />
+        <label htmlFor="customer">Customer</label><br/>
+        <input id="advisor" name="user_type" type="radio" value="ADVISOR"
+               onChange={(e) => setUserType(e.target.value)}
+        />
+        <label htmlFor="advisor">Advisor</label><br/>
         <button
           id="join-chat"
           type="button"
           onClick={joinChat}
         >Join Chat</button>
 
-        {showChat && <OpenChat username={username}></OpenChat>}
+        {showChat && <OpenChat username={username} userType={userType}></OpenChat>}
       </header>
     </div>
   );
