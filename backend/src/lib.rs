@@ -2,11 +2,22 @@ use axum::{http::StatusCode, response::Html, response::IntoResponse, routing::ge
 use std::sync::Arc;
 
 use crate::chat::*;
+use crate::redis_wrapper::RedisWrapper;
 
 mod chat;
+mod redis_wrapper;
 
-pub fn run() -> axum::Router {
-    let app_state = Arc::new(AppState::new());
+pub async fn run() -> axum::Router {
+    let client = redis::Client::open("redis://127.0.0.1:6379").unwrap();
+    let conn = client.get_async_connection()
+        .await
+        .expect("Unable to connect to Redis");
+
+    let app_state = Arc::new(
+        AppState::new(
+            RedisWrapper::new(conn)
+        )
+    );
 
     Router::new()
         .route("/", get(index))

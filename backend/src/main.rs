@@ -21,7 +21,7 @@ async fn main() {
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     tracing::debug!("listening on {}", addr);
 
-    let app = vop_rust::run();
+    let app = vop_rust::run().await;
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

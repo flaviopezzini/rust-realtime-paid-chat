@@ -7,23 +7,43 @@ use axum::{
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use std::{
-    collections::HashSet,
-    sync::{Arc, Mutex},
+    sync::{Arc},
 };
+use std::fmt::Formatter;
+use redis::{RedisError};
 use tokio::sync::broadcast;
+
+use rand::Rng;
+
+use crate::redis_wrapper::RedisWrapper;
+
+use std::ops::{Deref};
 
 // Our shared state
 pub struct AppState {
-    pub user_set: Mutex<HashSet<String>>,
+    pub redis: RedisWrapper,
     pub tx: broadcast::Sender<String>,
 }
 
 impl AppState {
-    pub fn new() -> AppState {
-        let user_set = Mutex::new(HashSet::new());
+    pub fn new(redis: RedisWrapper) -> AppState {
         let (tx, _rx) = broadcast::channel(100);
 
-        AppState { user_set, tx }
+        AppState { redis, tx }
+    }
+}
+
+impl std::fmt::Debug for AppState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
+
+impl Deref for AppState {
+    type Target = AppState;
+
+    fn deref(&self) -> &Self::Target {
+        &self
     }
 }
 
@@ -34,7 +54,10 @@ pub async fn websocket_handler(
     ws.on_upgrade(|socket| websocket(socket, state))
 }
 
-async fn websocket(stream: WebSocket, state: Arc<AppState>) {
+async fn websocket(stream: WebSocket, state_param: Arc<AppState>) {
+
+    let mut inner_state = Arc::try_unwrap(state_param).unwrap();
+
     // By splitting we can send and receive at the same time.
     let (mut sender, mut receiver) = stream.split();
 
@@ -44,7 +67,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
     while let Some(Ok(message)) = receiver.next().await {
         if let Message::Text(name) = message {
             // If username that is sent by client is not taken, fill username string.
-            check_username(&state, &mut username, &name);
+            check_username(&mut inner_state.redis, &mut username, &name);
 
             // If not empty we want to quit the loop else we want to quit function.
             if !username.is_empty() {
@@ -61,12 +84,12 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
     }
 
     // Subscribe before sending joined message.
-    let mut rx = state.tx.subscribe();
+    let mut rx = inner_state.tx.subscribe();
 
     // Send joined message to all subscribers.
     let msg = format!("{} joined.", username);
     tracing::debug!("{}", msg);
-    let _ = state.tx.send(msg);
+    let _ = inner_state.tx.send(msg);
 
     // This task will receive broadcast messages and send text message to our client.
     let mut send_task = tokio::spawn(async move {
@@ -79,7 +102,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
     });
 
     // Clone things we want to pass to the receiving task.
-    let tx = state.tx.clone();
+    let tx = inner_state.tx.clone();
     let name = username.clone();
 
     // This task will receive messages from client and send them to broadcast subscribers.
@@ -99,17 +122,25 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
     // Send user left message.
     let msg = format!("{} left.", username);
     tracing::debug!("{}", msg);
-    let _ = state.tx.send(msg);
+    let _ = inner_state.tx.send(msg);
     // Remove username from map so new clients can take it.
-    state.user_set.lock().unwrap().remove(&username);
+    inner_state.redis.del(username.clone());
+    inner_state.redis.remove_from_set("advisor_list".to_owned(), username);
 }
 
-fn check_username(state: &AppState, string: &mut String, name: &str) {
-    let mut user_set = state.user_set.lock().unwrap();
+async fn check_username(redis_wrapper: &mut RedisWrapper, string: &mut String, name: &str) -> Result<(), RedisError> {
+    if !(redis_wrapper.exists(name.to_owned()).await?) {
+        redis_wrapper.set(name.to_owned(), "true".to_owned()).await?;
 
-    if !user_set.contains(name) {
-        user_set.insert(name.to_owned());
+        let mut rng = rand::thread_rng();
 
+        redis_wrapper.add_to_set(
+            "advisor_list".to_owned(),
+            name.to_owned(),
+            rng.gen::<i32>()
+        ).await?;
         string.push_str(name);
     }
+
+    Ok(())
 }
