@@ -6,9 +6,7 @@ use axum::{
     response::IntoResponse,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
-use std::{
-    sync::{Arc},
-};
+
 use std::fmt::Formatter;
 use redis::{RedisError};
 use tokio::sync::broadcast;
@@ -20,6 +18,7 @@ use crate::redis_wrapper::RedisWrapper;
 use std::ops::{Deref};
 
 // Our shared state
+#[derive(Clone)]
 pub struct AppState {
     pub redis: RedisWrapper,
     pub tx: broadcast::Sender<String>,
@@ -49,14 +48,12 @@ impl Deref for AppState {
 
 pub async fn websocket_handler(
     ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
     ws.on_upgrade(|socket| websocket(socket, state))
 }
 
-async fn websocket(stream: WebSocket, state_param: Arc<AppState>) {
-
-    let mut inner_state = Arc::try_unwrap(state_param).unwrap();
+async fn websocket(stream: WebSocket, state: AppState) {
 
     // By splitting we can send and receive at the same time.
     let (mut sender, mut receiver) = stream.split();
@@ -67,7 +64,7 @@ async fn websocket(stream: WebSocket, state_param: Arc<AppState>) {
     while let Some(Ok(message)) = receiver.next().await {
         if let Message::Text(name) = message {
             // If username that is sent by client is not taken, fill username string.
-            check_username(&mut inner_state.redis, &mut username, &name);
+            check_username(&state.redis, &mut username, &name).await.unwrap();
 
             // If not empty we want to quit the loop else we want to quit function.
             if !username.is_empty() {
@@ -84,12 +81,12 @@ async fn websocket(stream: WebSocket, state_param: Arc<AppState>) {
     }
 
     // Subscribe before sending joined message.
-    let mut rx = inner_state.tx.subscribe();
+    let mut rx = state.tx.subscribe();
 
     // Send joined message to all subscribers.
     let msg = format!("{} joined.", username);
     tracing::debug!("{}", msg);
-    let _ = inner_state.tx.send(msg);
+    let _ = state.tx.send(msg);
 
     // This task will receive broadcast messages and send text message to our client.
     let mut send_task = tokio::spawn(async move {
@@ -102,7 +99,7 @@ async fn websocket(stream: WebSocket, state_param: Arc<AppState>) {
     });
 
     // Clone things we want to pass to the receiving task.
-    let tx = inner_state.tx.clone();
+    let tx = state.tx.clone();
     let name = username.clone();
 
     // This task will receive messages from client and send them to broadcast subscribers.
@@ -122,24 +119,33 @@ async fn websocket(stream: WebSocket, state_param: Arc<AppState>) {
     // Send user left message.
     let msg = format!("{} left.", username);
     tracing::debug!("{}", msg);
-    let _ = inner_state.tx.send(msg);
+    let _ = state.tx.send(msg);
     // Remove username from map so new clients can take it.
-    inner_state.redis.del(username.clone());
-    inner_state.redis.remove_from_set("advisor_list".to_owned(), username);
+    state.redis.del(username.clone()).await.unwrap();
+    state.redis.remove_from_set("advisor_list".to_owned(), username).await.unwrap();
 }
 
-async fn check_username(redis_wrapper: &mut RedisWrapper, string: &mut String, name: &str) -> Result<(), RedisError> {
+async fn check_username(redis_wrapper: &RedisWrapper, string: &mut String, name: &str) -> Result<(), RedisError> {
+    tracing::info!("username {} name {} exists {}", &string, &name, redis_wrapper.exists(name.to_owned()).await?);
+
     if !(redis_wrapper.exists(name.to_owned()).await?) {
+        tracing::info!("got into exists block");
+
         redis_wrapper.set(name.to_owned(), "true".to_owned()).await?;
 
-        let mut rng = rand::thread_rng();
+        tracing::info!("After set");
+
+        let rng = rand::thread_rng().gen::<i32>();
 
         redis_wrapper.add_to_set(
             "advisor_list".to_owned(),
             name.to_owned(),
-            rng.gen::<i32>()
+            rng
         ).await?;
+        tracing::info!("After add to set");
+        tracing::info!("Before push {}", string);
         string.push_str(name);
+        tracing::info!("After push {}", string);
     }
 
     Ok(())
