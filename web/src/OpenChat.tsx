@@ -25,8 +25,7 @@ function OpenChat(props: Props) {
 //     getWebSocket,
   } = useWebSocket(socketUrl, {
     onOpen: () => {
-      console.log('opened ' + props.userType);
-      sendMessage(props.username);
+      sendMessage(JSON.stringify(props));
     },
     onClose: () => {
         console.log("closed");

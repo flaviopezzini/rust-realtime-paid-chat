@@ -16,20 +16,37 @@ use rand::Rng;
 use crate::redis_wrapper::RedisWrapper;
 
 use std::ops::{Deref};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, Ordering};
+
+use uuid::Uuid;
 
 // Our shared state
 #[derive(Clone)]
 pub struct AppState {
     pub redis: RedisWrapper,
     pub tx: broadcast::Sender<String>,
+    pub advisors: Vec<Advisor>
+}
+
+#[derive(Clone)]
+pub struct Advisor {
+    name: String,
+    talking_to : Option<Uuid>
 }
 
 impl AppState {
     pub fn new(redis: RedisWrapper) -> AppState {
         let (tx, _rx) = broadcast::channel(100);
 
-        AppState { redis, tx }
+        AppState { redis, tx , advisors: Vec::new() }
     }
+}
+
+#[derive(serde::Deserialize)]
+struct Payload {
+  username: String,
+  userType: String
 }
 
 impl std::fmt::Debug for AppState {
@@ -62,9 +79,20 @@ async fn websocket(stream: WebSocket, state: AppState) {
     let mut username = String::new();
     // Loop until a text message is found.
     while let Some(Ok(message)) = receiver.next().await {
-        if let Message::Text(name) = message {
+        if let Message::Text(payload) = message {
+
+            let payload = match serde_json::from_str::<Payload>(&payload) {
+                Ok(inner) => inner,
+                Err(err) => {
+                    let _ = sender
+                    .send(Message::Text(String::from("Invalid format")))
+                    .await;
+                    return;
+                } 
+            };
+
             // If username that is sent by client is not taken, fill username string.
-            check_username(&state.redis, &mut username, &name).await.unwrap();
+            check_username(&state.redis, &mut username, &payload.username).await.unwrap();
 
             // If not empty we want to quit the loop else we want to quit function.
             if !username.is_empty() {
@@ -79,6 +107,8 @@ async fn websocket(stream: WebSocket, state: AppState) {
             }
         }
     }
+
+    // handle payload
 
     // Subscribe before sending joined message.
     let mut rx = state.tx.subscribe();

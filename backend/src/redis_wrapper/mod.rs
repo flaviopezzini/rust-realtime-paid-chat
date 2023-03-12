@@ -19,8 +19,7 @@ impl RedisWrapper {
     }
 
     pub async fn exists(&self, key: String) -> Result<bool, RedisError> {
-        self.connect().await?.exists(&key).await?;
-        Ok(true)
+        self.connect().await?.exists(&key).await
     }
 
     pub async fn del(&self, key: String) -> Result<(), RedisError> {
