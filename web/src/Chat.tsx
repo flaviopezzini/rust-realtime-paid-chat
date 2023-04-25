@@ -35,7 +35,7 @@ function Chat() {
           onClick={joinChat}
         >Join Chat</button>
 
-        {showChat && <OpenChat username={username} userType={userType}></OpenChat>}
+        {showChat && <OpenChat username={username} user_type={userType}></OpenChat>}
       </header>
     </div>
   );

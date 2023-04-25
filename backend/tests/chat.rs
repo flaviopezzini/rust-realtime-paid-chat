@@ -19,7 +19,7 @@ async fn chat_works() {
             .unwrap();
 
     socket_sender
-        .send(tungstenite::Message::text("sender_username"))
+        .send(tungstenite::Message::text(r#"{"username":"sender_username","user_type":"advisor"}"#))
         .await
         .unwrap();
 
@@ -30,7 +30,7 @@ async fn chat_works() {
     assert_eq!(msg_sender_joined, "sender_username joined.");
 
     socket_receiver
-        .send(tungstenite::Message::text("receiver_username"))
+        .send(tungstenite::Message::text(r#"{"username":"receiver_username","user_type":"customer"}"#))
         .await
         .unwrap();
 

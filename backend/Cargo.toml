@@ -20,7 +20,6 @@ tokio = { version = "1.23.1", features = ["full"] }
 tower = { version = "0.4", features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tokio-tungstenite = "0.17"
 redis = { version = "0.22.3", features = ["aio", "futures", "tokio", "tokio-comp", "tokio-native-tls", "tokio-native-tls-comp", "serde", "serde_json", "json"] }
 rand = "0.8.5"
 fmt = "0.1.0"
@@ -30,3 +29,4 @@ serde_json = "1.0.94"
 
 [dev-dependencies]
 reqwest = "0.11"
+tokio-tungstenite = "0.17"

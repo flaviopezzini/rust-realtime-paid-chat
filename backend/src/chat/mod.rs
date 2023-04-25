@@ -46,7 +46,7 @@ impl AppState {
 #[derive(serde::Deserialize)]
 struct Payload {
   username: String,
-  userType: String
+  user_type: String
 }
 
 impl std::fmt::Debug for AppState {
@@ -80,6 +80,8 @@ async fn websocket(stream: WebSocket, state: AppState) {
     // Loop until a text message is found.
     while let Some(Ok(message)) = receiver.next().await {
         if let Message::Text(payload) = message {
+
+            tracing::debug!("BLABLA {}", payload);
 
             let payload = match serde_json::from_str::<Payload>(&payload) {
                 Ok(inner) => inner,

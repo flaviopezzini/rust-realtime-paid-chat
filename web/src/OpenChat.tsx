@@ -6,7 +6,7 @@ import useWebSocket from 'react-use-websocket';
 
 type Props = {
   username: string,
-  userType: String,
+  user_type: String,
 }
 
 function OpenChat(props: Props) {
