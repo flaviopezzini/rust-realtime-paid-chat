@@ -8,46 +8,46 @@ use futures::{SinkExt, StreamExt};
 async fn chat_works() {
     let addr = spawn_app::spawn_app().await;
 
-    let (mut socket_sender, _response) =
-        tokio_tungstenite::connect_async(format!("ws://{addr}/websocket"))
+    let (mut socket_advisor, _response) =
+        tokio_tungstenite::connect_async(format!("ws://{addr}/websocket/advisor/customer"))
+            .await
+            .expect("Failed to connect to the websocket from the advisor side");
+
+    let (mut socket_customer, _response) =
+        tokio_tungstenite::connect_async(format!("ws://{addr}/websocket/advisor/customer"))
             .await
             .unwrap();
 
-    let (mut socket_receiver, _response) =
-        tokio_tungstenite::connect_async(format!("ws://{addr}/websocket"))
-            .await
-            .unwrap();
-
-    socket_sender
-        .send(tungstenite::Message::text(r#"{"username":"sender_username","user_type":"advisor"}"#))
+    socket_advisor
+        .send(tungstenite::Message::text(r#"{"username":"advisor","user_type":"advisor"}"#))
         .await
         .unwrap();
 
-    let msg_sender_joined = match socket_sender.next().await.unwrap().unwrap() {
+    let msg_advisor_joined = match socket_advisor.next().await.unwrap().unwrap() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
     };
-    assert_eq!(msg_sender_joined, "sender_username joined.");
+    assert_eq!(msg_advisor_joined, "advisor joined.");
 
-    socket_receiver
-        .send(tungstenite::Message::text(r#"{"username":"receiver_username","user_type":"customer"}"#))
+    socket_customer
+        .send(tungstenite::Message::text(r#"{"username":"customer","user_type":"customer"}"#))
         .await
         .unwrap();
 
-    let msg_receiver_joined = match socket_receiver.next().await.unwrap().unwrap() {
+    let msg_customer_joined = match socket_customer.next().await.unwrap().unwrap() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
     };
-    assert_eq!(msg_receiver_joined, "receiver_username joined.");
+    assert_eq!(msg_customer_joined, "customer joined.");
 
-    socket_sender
-        .send(tungstenite::Message::text("Hello from Sender"))
+    socket_advisor
+        .send(tungstenite::Message::text("Hello from Advisor"))
         .await
         .unwrap();
 
-    let msg_hello_from_sender = match socket_receiver.next().await.unwrap().unwrap() {
+    let msg_hello_from_advisor = match socket_customer.next().await.expect("Error here").unwrap() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
     };
-    assert_eq!(msg_hello_from_sender, "sender_username: Hello from Sender");
+    assert_eq!(msg_hello_from_advisor, "advisor: Hello from Advisor");
 }

@@ -7,6 +7,7 @@ use crate::redis_wrapper::RedisWrapper;
 
 mod chat;
 mod redis_wrapper;
+mod advisor_list;
 
 pub async fn run() -> axum::Router {
     let client = redis::Client::open("redis://127.0.0.1:6379").unwrap();
@@ -19,7 +20,8 @@ pub async fn run() -> axum::Router {
     Router::new()
         .route("/", get(index))
         .route("/health_check", get(health_check))
-        .route("/websocket", get(websocket_handler))
+        .route("/advisor-list", get(advisor_list::advisor_list))
+        .route("/websocket/:advisor/:customer", get(websocket_handler))
         .with_state(app_state)
 }
 

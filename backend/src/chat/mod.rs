@@ -1,7 +1,7 @@
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
+        State, Path,
     },
     response::IntoResponse,
 };
@@ -66,11 +66,12 @@ impl Deref for AppState {
 pub async fn websocket_handler(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
+    Path((advisor, customer)): Path<(String, String)>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(|socket| websocket(socket, state))
+    ws.on_upgrade(|socket| websocket(socket, state, advisor, customer))
 }
 
-async fn websocket(stream: WebSocket, state: AppState) {
+async fn websocket(stream: WebSocket, state: AppState, advisor: String, customer: String) {
 
     // By splitting we can send and receive at the same time.
     let (mut sender, mut receiver) = stream.split();
@@ -81,9 +82,7 @@ async fn websocket(stream: WebSocket, state: AppState) {
     while let Some(Ok(message)) = receiver.next().await {
         if let Message::Text(payload) = message {
 
-            tracing::debug!("BLABLA {}", payload);
-
-            let payload = match serde_json::from_str::<Payload>(&payload) {
+            let payload: Payload = match serde_json::from_str::<Payload>(&payload) {
                 Ok(inner) => inner,
                 Err(err) => {
                     let _ = sender
@@ -94,7 +93,12 @@ async fn websocket(stream: WebSocket, state: AppState) {
             };
 
             // If username that is sent by client is not taken, fill username string.
-            check_username(&state.redis, &mut username, &payload.username).await.unwrap();
+            check_username(
+                &state.redis, 
+                &mut username,
+                &payload
+            )
+                .await.unwrap();
 
             // If not empty we want to quit the loop else we want to quit function.
             if !username.is_empty() {
@@ -157,27 +161,28 @@ async fn websocket(stream: WebSocket, state: AppState) {
     state.redis.remove_from_set("advisor_list".to_owned(), username).await.unwrap();
 }
 
-async fn check_username(redis_wrapper: &RedisWrapper, string: &mut String, name: &str) -> Result<(), RedisError> {
+async fn check_username(
+    redis_wrapper: &RedisWrapper, 
+    string: &mut String, 
+    payload: &Payload
+) -> Result<(), RedisError> {
+    let name = &payload.username;
     tracing::info!("username {} name {} exists {}", &string, &name, redis_wrapper.exists(name.to_owned()).await?);
 
     if !(redis_wrapper.exists(name.to_owned()).await?) {
-        tracing::info!("got into exists block");
 
         redis_wrapper.set(name.to_owned(), "true".to_owned()).await?;
 
-        tracing::info!("After set");
-
         let rng = rand::thread_rng().gen::<i32>();
 
-        redis_wrapper.add_to_set(
-            "advisor_list".to_owned(),
-            name.to_owned(),
-            rng
-        ).await?;
-        tracing::info!("After add to set");
-        tracing::info!("Before push {}", string);
+        if "advisor" == payload.user_type {
+            redis_wrapper.add_to_set(
+                "advisor_list".to_owned(),
+                name.to_owned(),
+                rng
+            ).await?;
+        }
         string.push_str(name);
-        tracing::info!("After push {}", string);
     }
 
     Ok(())

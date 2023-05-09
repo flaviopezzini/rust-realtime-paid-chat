@@ -49,4 +49,11 @@ impl RedisWrapper {
             .await?;
         Ok(())
     }
+
+    pub async fn fetch_set(&self, set: String) -> Result<String, RedisError> {
+        redis::cmd("SMEMBERS")
+        .arg(set)
+        .query_async::<Connection, String>(&mut self.connect().await?)
+            .await
+    }
 }
