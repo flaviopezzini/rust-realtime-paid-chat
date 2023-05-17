@@ -32,28 +32,19 @@ impl RedisWrapper {
         Ok(())
     }
 
-    pub async fn add_to_set(&self, set: String, key: String, value: i32) -> Result<(), RedisError> {
-        redis::cmd("ZADD")
-            .arg(set)
-            .arg(value)
-            .arg(key)
-            .query_async(&mut self.connect().await?).await?;
-        Ok(())
+    pub async fn add_to_set(&self, set: String, key: String) -> Result<(), RedisError> {
+        self.connect().await?.sadd(set, key).await
     }
 
     pub async fn remove_from_set(&self, set: String, key: String) -> Result<(), RedisError> {
-        redis::cmd("ZREM")
-            .arg(set)
-            .arg(key)
-            .query_async::<Connection, String>(&mut self.connect().await?)
-            .await?;
-        Ok(())
+        self.connect().await?.srem(set, key).await
     }
 
-    pub async fn fetch_set(&self, set: String) -> Result<String, RedisError> {
-        redis::cmd("SMEMBERS")
-        .arg(set)
-        .query_async::<Connection, String>(&mut self.connect().await?)
-            .await
+    pub async fn fetch_set(&self, set: String) -> Result<Vec<String>, RedisError> {
+        self.connect().await?.smembers(set).await
+        // redis::cmd("SMEMBERS")
+        // .arg(set)
+        // .query_async::<Connection, Vec<String>>(&mut self.connect().await?)
+        //     .await
     }
 }

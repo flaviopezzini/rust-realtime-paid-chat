@@ -4,6 +4,8 @@ use tokio_tungstenite::tungstenite;
 
 use futures::{SinkExt, StreamExt};
 
+use uuid::Uuid;
+
 #[tokio::test]
 async fn chat_works() {
     let addr = spawn_app::spawn_app().await;
@@ -13,13 +15,15 @@ async fn chat_works() {
             .await
             .expect("Failed to connect to the websocket from the advisor side");
 
+    let advisor = Uuid::new_v4();
+
     let (mut socket_customer, _response) =
-        tokio_tungstenite::connect_async(format!("ws://{addr}/websocket/advisor/customer"))
+        tokio_tungstenite::connect_async(format!("ws://{addr}/websocket/{advisor}/customer"))
             .await
             .unwrap();
 
     socket_advisor
-        .send(tungstenite::Message::text(r#"{"username":"advisor","user_type":"advisor"}"#))
+        .send(tungstenite::Message::text(format!(r#"{{"username":"{advisor}","user_type":"advisor"}}"#)))
         .await
         .unwrap();
 

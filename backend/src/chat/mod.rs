@@ -11,8 +11,6 @@ use std::fmt::Formatter;
 use redis::{RedisError};
 use tokio::sync::broadcast;
 
-use rand::Rng;
-
 use crate::redis_wrapper::RedisWrapper;
 
 use std::ops::{Deref};
@@ -173,13 +171,10 @@ async fn check_username(
 
         redis_wrapper.set(name.to_owned(), "true".to_owned()).await?;
 
-        let rng = rand::thread_rng().gen::<i32>();
-
         if "advisor" == payload.user_type {
             redis_wrapper.add_to_set(
                 "advisor_list".to_owned(),
-                name.to_owned(),
-                rng
+                name.to_owned()
             ).await?;
         }
         string.push_str(name);
