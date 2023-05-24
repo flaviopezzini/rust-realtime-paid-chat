@@ -14,8 +14,6 @@ use tokio::sync::broadcast;
 use crate::redis_wrapper::RedisWrapper;
 
 use std::ops::{Deref};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, Ordering};
 
 use uuid::Uuid;
 
@@ -82,7 +80,7 @@ async fn websocket(stream: WebSocket, state: AppState, advisor: String, customer
 
             let payload: Payload = match serde_json::from_str::<Payload>(&payload) {
                 Ok(inner) => inner,
-                Err(err) => {
+                Err(_) => {
                     let _ = sender
                     .send(Message::Text(String::from("Invalid format")))
                     .await;

@@ -1,5 +1,6 @@
 mod spawn_app;
 
+use testcontainers::clients;
 use tokio_tungstenite::tungstenite;
 
 use futures::{SinkExt, StreamExt};
@@ -8,6 +9,10 @@ use uuid::Uuid;
 
 #[tokio::test]
 async fn chat_works() {
+    let docker = clients::Cli::default();
+    let container = docker.run(testcontainers::images::redis::Redis);
+    println!("Port acquired was {}", container.get_host_port_ipv4(6379));
+
     let addr = spawn_app::spawn_app().await;
 
     let (mut socket_advisor, _response) =
@@ -31,10 +36,12 @@ async fn chat_works() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
     };
-    assert_eq!(msg_advisor_joined, "advisor joined.");
+    assert_eq!(msg_advisor_joined, format!("{advisor} joined."));
+
+    let customer = Uuid::new_v4();
 
     socket_customer
-        .send(tungstenite::Message::text(r#"{"username":"customer","user_type":"customer"}"#))
+        .send(tungstenite::Message::text(format!(r#"{{"username":"{customer}","user_type":"customer"}}"#)))
         .await
         .unwrap();
 
@@ -42,7 +49,7 @@ async fn chat_works() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
     };
-    assert_eq!(msg_customer_joined, "customer joined.");
+    assert_eq!(msg_customer_joined, format!("{customer} joined."));
 
     socket_advisor
         .send(tungstenite::Message::text("Hello from Advisor"))
@@ -53,5 +60,8 @@ async fn chat_works() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
     };
-    assert_eq!(msg_hello_from_advisor, "advisor: Hello from Advisor");
+    assert_eq!(msg_hello_from_advisor, format!("{advisor}: Hello from Advisor"));
+
+    socket_advisor.close(None).await.unwrap();
+    socket_customer.close(None).await.unwrap();
 }
