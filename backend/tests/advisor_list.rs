@@ -11,9 +11,10 @@ use uuid::Uuid;
 async fn advisor_list_works() {
 
     let docker = clients::Cli::default();
-    let _container = docker.run(testcontainers::images::redis::Redis);
-    
-    let addr = spawn_app::spawn_app().await;
+    let container = docker.run(testcontainers::images::redis::Redis);
+    let redis_port = container.get_host_port_ipv4(6379);
+
+    let addr = spawn_app::spawn_app(redis_port).await;
 
     let client = reqwest::Client::new();
 

@@ -1,8 +1,15 @@
 mod spawn_app;
 
+use testcontainers::clients;
+
 #[tokio::test]
 async fn health_check_works() {
-    let addr = spawn_app::spawn_app().await;
+
+    let docker = clients::Cli::default();
+    let container = docker.run(testcontainers::images::redis::Redis);
+    let redis_port = container.get_host_port_ipv4(6379);
+
+    let addr = spawn_app::spawn_app(redis_port).await;
 
     let client = reqwest::Client::new();
 

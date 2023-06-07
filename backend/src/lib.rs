@@ -9,8 +9,8 @@ mod chat;
 mod redis_wrapper;
 mod advisor_list;
 
-pub async fn run() -> axum::Router {
-    let client = redis::Client::open("redis://127.0.0.1:6379").unwrap();
+pub async fn run(redis_port: u16) -> axum::Router {
+    let client = redis::Client::open(format!("redis://127.0.0.1:{redis_port}")).unwrap();
 
     let app_state =
         AppState::new(

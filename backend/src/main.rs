@@ -18,10 +18,16 @@ async fn main() {
         .parse::<u16>()
         .expect("Environment variable SERVER_PORT must be a valid number");
 
+    let redis_port = env::var("REDIS_PORT").expect("Environment variable SERVER_PORT not set");
+    let redis_port = redis_port
+            .parse::<u16>()
+            .expect("Environment variable REDIS_PORT must be a valid number");
+    
+
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     tracing::debug!("listening on {}", addr);
 
-    let app = vop_rust::run().await;
+    let app = vop_rust::run(redis_port).await;
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

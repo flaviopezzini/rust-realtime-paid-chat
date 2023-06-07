@@ -1,19 +1,20 @@
 mod spawn_app;
 
-use testcontainers::clients;
 use tokio_tungstenite::tungstenite;
 
 use futures::{SinkExt, StreamExt};
 
 use uuid::Uuid;
 
+use testcontainers::clients;
+
 #[tokio::test]
 async fn chat_works() {
     let docker = clients::Cli::default();
     let container = docker.run(testcontainers::images::redis::Redis);
-    println!("Port acquired was {}", container.get_host_port_ipv4(6379));
+    let redis_port = container.get_host_port_ipv4(6379);
 
-    let addr = spawn_app::spawn_app().await;
+    let addr = spawn_app::spawn_app(redis_port).await;
 
     let (mut socket_advisor, _response) =
         tokio_tungstenite::connect_async(format!("ws://{addr}/websocket/advisor/customer"))

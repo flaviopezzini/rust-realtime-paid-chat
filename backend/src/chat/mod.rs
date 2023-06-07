@@ -89,12 +89,7 @@ async fn websocket(stream: WebSocket, state: AppState, advisor: String, customer
             };
 
             // If username that is sent by client is not taken, fill username string.
-            check_username(
-                &state.redis, 
-                &mut username,
-                &payload
-            )
-                .await.unwrap();
+            check_username(&state.redis, &mut username, &payload).await.unwrap();
 
             // If not empty we want to quit the loop else we want to quit function.
             if !username.is_empty() {
@@ -163,6 +158,8 @@ async fn check_username(
     payload: &Payload
 ) -> Result<(), RedisError> {
     let name = &payload.username;
+    println!("BLA BLA BLA BLA BLA BLA");
+    println!("username {} name {} exists {}", &string, &name, redis_wrapper.exists(name.to_owned()).await?);
     tracing::info!("username {} name {} exists {}", &string, &name, redis_wrapper.exists(name.to_owned()).await?);
 
     if !(redis_wrapper.exists(name.to_owned()).await?) {
