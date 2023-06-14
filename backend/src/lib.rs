@@ -8,6 +8,10 @@ use crate::redis_wrapper::RedisWrapper;
 mod chat;
 mod redis_wrapper;
 mod advisor_list;
+mod database;
+mod models;
+mod schema;
+mod chat_repository;
 
 pub async fn run(redis_port: u16) -> axum::Router {
     let client = redis::Client::open(format!("redis://127.0.0.1:{redis_port}")).unwrap();

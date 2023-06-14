@@ -5,13 +5,15 @@ use axum::{
     },
     response::IntoResponse,
 };
+use chrono::Utc;
+use diesel::sql_types::Timestamp;
 use futures::{sink::SinkExt, stream::StreamExt};
 
 use std::fmt::Formatter;
 use redis::{RedisError};
 use tokio::sync::broadcast;
 
-use crate::redis_wrapper::RedisWrapper;
+use crate::{redis_wrapper::RedisWrapper, chat_repository};
 
 use std::ops::{Deref};
 
@@ -133,7 +135,15 @@ async fn websocket(stream: WebSocket, state: AppState, advisor: String, customer
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(Message::Text(text))) = receiver.next().await {
             // Add username before message.
-            let _ = tx.send(format!("{}: {}", name, text));
+            let message_to_send = format!("{}: {}", name, text);
+            chat_repository::save(crate::models::Chat {
+                id: Uuid::new_v4(),
+                sender: "sender",
+                receiver: "receiver",
+                created_date: Timestamp::from(Utc::now().naive_utc()),
+                content: message_to_send,
+            });
+            let _ = tx.send(message_to_send);
         }
     });
 
