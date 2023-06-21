@@ -1,9 +1,9 @@
 use axum::{http::StatusCode, response::Html, response::IntoResponse, routing::get, Router};
 
-
-
 use crate::chat::*;
 use crate::redis_wrapper::RedisWrapper;
+
+use deadpool_diesel::postgres::{Runtime, Manager, Pool};
 
 mod chat;
 mod redis_wrapper;
@@ -13,12 +13,19 @@ mod models;
 mod schema;
 mod chat_repository;
 
-pub async fn run(redis_port: u16) -> axum::Router {
+pub async fn run(redis_port: u16, database_url: String) -> axum::Router {
     let client = redis::Client::open(format!("redis://127.0.0.1:{redis_port}")).unwrap();
+
+    let manager = Manager::new(database_url, Runtime::Tokio1);
+    let pool = Pool::builder(manager)
+        .max_size(8)
+        .build()
+        .unwrap();
 
     let app_state =
         AppState::new(
-            RedisWrapper::new(client)
+            RedisWrapper::new(client),
+            pool
         );
 
     Router::new()

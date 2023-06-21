@@ -23,11 +23,12 @@ async fn main() {
             .parse::<u16>()
             .expect("Environment variable REDIS_PORT must be a valid number");
     
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     tracing::debug!("listening on {}", addr);
 
-    let app = vop_rust::run(redis_port).await;
+    let app = vop_rust::run(redis_port, database_url).await;
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

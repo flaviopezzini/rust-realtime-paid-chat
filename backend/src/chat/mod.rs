@@ -6,7 +6,8 @@ use axum::{
     response::IntoResponse,
 };
 use chrono::Utc;
-use diesel::sql_types::Timestamp;
+use deadpool_diesel::{Pool, Manager};
+use diesel::PgConnection;
 use futures::{sink::SinkExt, stream::StreamExt};
 
 use std::fmt::Formatter;
@@ -23,6 +24,7 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct AppState {
     pub redis: RedisWrapper,
+    pub pool: Pool<Manager<PgConnection>>,
     pub tx: broadcast::Sender<String>,
     pub advisors: Vec<Advisor>
 }
@@ -34,10 +36,10 @@ pub struct Advisor {
 }
 
 impl AppState {
-    pub fn new(redis: RedisWrapper) -> AppState {
+    pub fn new(redis: RedisWrapper, pool: Pool<Manager<PgConnection>>) -> AppState {
         let (tx, _rx) = broadcast::channel(100);
 
-        AppState { redis, tx , advisors: Vec::new() }
+        AppState { redis, pool, tx , advisors: Vec::new() }
     }
 }
 
@@ -57,7 +59,7 @@ impl Deref for AppState {
     type Target = AppState;
 
     fn deref(&self) -> &Self::Target {
-        &self
+        self
     }
 }
 
@@ -134,16 +136,16 @@ async fn websocket(stream: WebSocket, state: AppState, advisor: String, customer
     // This task will receive messages from client and send them to broadcast subscribers.
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(Message::Text(text))) = receiver.next().await {
-            // Add username before message.
-            let message_to_send = format!("{}: {}", name, text);
-            chat_repository::save(crate::models::Chat {
+            let receiver_value = if advisor != name { advisor.clone() }  else { customer.clone() };
+
+            chat_repository::save(state.pool, crate::models::Chat {
                 id: Uuid::new_v4(),
-                sender: "sender",
-                receiver: "receiver",
-                created_date: Timestamp::from(Utc::now().naive_utc()),
-                content: message_to_send,
-            });
-            let _ = tx.send(message_to_send);
+                sender: name.clone(),
+                receiver: receiver_value,
+                created_date: Utc::now().naive_utc(),
+                content: format!("{}: {}", name, text),
+            }).await;
+            let _ = tx.send(format!("{}: {}", name, text));
         }
     });
 
@@ -168,7 +170,6 @@ async fn check_username(
     payload: &Payload
 ) -> Result<(), RedisError> {
     let name = &payload.username;
-    println!("BLA BLA BLA BLA BLA BLA");
     println!("username {} name {} exists {}", &string, &name, redis_wrapper.exists(name.to_owned()).await?);
     tracing::info!("username {} name {} exists {}", &string, &name, redis_wrapper.exists(name.to_owned()).await?);
 

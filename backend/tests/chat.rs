@@ -11,10 +11,15 @@ use testcontainers::clients;
 #[tokio::test]
 async fn chat_works() {
     let docker = clients::Cli::default();
-    let container = docker.run(testcontainers::images::redis::Redis);
-    let redis_port = container.get_host_port_ipv4(6379);
+    let redis_container = docker.run(testcontainers::images::redis::Redis);
+    let redis_port = redis_container.get_host_port_ipv4(6379);
 
-    let addr = spawn_app::spawn_app(redis_port).await;
+    let pg_container = docker.run(testcontainers::images::postgres::Postgres);
+    let pg_port = pg_container.get_host_port_ipv4(5432);
+
+    let database_url = format!("postgresql://localhost:{pg_port}/vop_rust");
+
+    let addr = spawn_app::spawn_app(redis_port, database_url).await;
 
     let (mut socket_advisor, _response) =
         tokio_tungstenite::connect_async(format!("ws://{addr}/websocket/advisor/customer"))
