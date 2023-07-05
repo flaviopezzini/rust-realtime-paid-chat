@@ -138,7 +138,7 @@ async fn websocket(stream: WebSocket, state: AppState, advisor: String, customer
         while let Some(Ok(Message::Text(text))) = receiver.next().await {
             let receiver_value = if advisor != name { advisor.clone() }  else { customer.clone() };
 
-            chat_repository::save(state.pool, crate::models::Chat {
+            let _ = chat_repository::save(&state.pool, crate::models::Chat {
                 id: Uuid::new_v4(),
                 sender: name.clone(),
                 receiver: receiver_value,

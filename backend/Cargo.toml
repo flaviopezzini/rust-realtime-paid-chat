@@ -16,7 +16,7 @@ name = "vop_rust"
 axum = { version = "0.6.1", features = ["ws"] }
 hyper = {version = "0.14.23"}
 futures = "0.3"
-tokio = { version = "1.23.1", features = ["full"] }
+tokio = { version = "1.29.1", features = ["full"] }
 tower = { version = "0.4", features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -26,8 +26,11 @@ fmt = "0.1.0"
 serde = { version = "1.0.154", features = ["derive"] }
 serde_json = "1.0.94"
 diesel = { version = "2.1.0", features = ["postgres", "chrono", "uuid"] }
+diesel-async = { version = "0.3.1", features = ["postgres", "deadpool", "tokio-postgres"] }
 chrono = "0.4.26"
 deadpool-diesel = { version = "0.4.1", features = ["postgres"] }
+
+anyhow = "1.0"
 
 [dependencies.uuid]
 version = "1.3.3"

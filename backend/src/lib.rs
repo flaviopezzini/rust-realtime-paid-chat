@@ -5,6 +5,10 @@ use crate::redis_wrapper::RedisWrapper;
 
 use deadpool_diesel::postgres::{Runtime, Manager, Pool};
 
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::pooled_connection::deadpool::Pool;
+use diesel_async::RunQueryDsl;
+
 mod chat;
 mod redis_wrapper;
 mod advisor_list;
@@ -16,11 +20,15 @@ mod chat_repository;
 pub async fn run(redis_port: u16, database_url: String) -> axum::Router {
     let client = redis::Client::open(format!("redis://127.0.0.1:{redis_port}")).unwrap();
 
-    let manager = Manager::new(database_url, Runtime::Tokio1);
-    let pool = Pool::builder(manager)
-        .max_size(8)
-        .build()
-        .unwrap();
+    // let manager = Manager::new(database_url, Runtime::Tokio1);
+    // let pool = Pool::builder(manager)
+    //     .max_size(8)
+    //     .build()
+    //     .unwrap();
+
+    // create a new connection pool with the default config
+    let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(std::env::var("DATABASE_URL")?);
+    let pool = Pool::builder(config).build()?;
 
     let app_state =
         AppState::new(
