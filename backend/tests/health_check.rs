@@ -9,7 +9,11 @@ async fn health_check_works() {
     let container = docker.run(testcontainers::images::redis::Redis);
     let redis_port = container.get_host_port_ipv4(6379);
 
-    let addr = spawn_app::spawn_app(redis_port).await;
+    let pg_container = docker.run(testcontainers::images::postgres::Postgres::default());
+    let pg_port = pg_container.get_host_port_ipv4(5432);
+    let database_url = format!("postgresql://localhost:{pg_port}/vop_rust");
+
+    let addr = spawn_app::spawn_app(redis_port, database_url).await;
 
     let client = reqwest::Client::new();
 

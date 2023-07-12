@@ -6,9 +6,8 @@ use axum::{
     response::IntoResponse,
 };
 use chrono::Utc;
-use deadpool_diesel::{Pool, Manager};
-use diesel::PgConnection;
 use futures::{sink::SinkExt, stream::StreamExt};
+use sqlx::{Pool, Postgres};
 
 use std::fmt::Formatter;
 use redis::{RedisError};
@@ -24,7 +23,7 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct AppState {
     pub redis: RedisWrapper,
-    pub pool: Pool<Manager<PgConnection>>,
+    pub pool: Pool<Postgres>,
     pub tx: broadcast::Sender<String>,
     pub advisors: Vec<Advisor>
 }
@@ -36,7 +35,7 @@ pub struct Advisor {
 }
 
 impl AppState {
-    pub fn new(redis: RedisWrapper, pool: Pool<Manager<PgConnection>>) -> AppState {
+    pub fn new(redis: RedisWrapper, pool: Pool<Postgres>) -> AppState {
         let (tx, _rx) = broadcast::channel(100);
 
         AppState { redis, pool, tx , advisors: Vec::new() }

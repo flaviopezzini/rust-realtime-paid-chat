@@ -1,20 +1,23 @@
 
-use deadpool_diesel::postgres::Pool;
-use diesel::SelectableHelper;
-use diesel::RunQueryDsl;
 
-use crate::{models::Chat, schema::chat};
+use sqlx::{Pool, Postgres};
 
-pub async fn save(pool: &Pool, chat: Chat) -> Result<(), anyhow::Error> {
-    let conn = pool.get().await?;
+use crate::models::Chat;
 
-    let x = conn.interact(move |conn| {
-        diesel::insert_into(chat::table)
-        .values(&(chat.clone()))
-        .returning(Chat::as_returning())
-        .get_result(conn)
-        .expect("Error saving new post")
-    }).await?;
+pub async fn save(pool: &Pool<Postgres>, chat: Chat) -> Result<(), anyhow::Error> {
+
+    sqlx::query!(
+        r#"
+        INSERT INTO chat (id, sender, receiver, created_date, "content")
+        VALUES ($1, $2, $3, $4, $5)
+        "#,
+                 chat.id,
+                chat.sender,
+                chat.receiver,
+                chat.created_date,
+                chat.content
+                )
+        .execute(pool).await?;
 
     Ok(())
 }
