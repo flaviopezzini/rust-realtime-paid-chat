@@ -8,17 +8,14 @@ use uuid::Uuid;
 
 use testcontainers::clients;
 
+use crate::spawn_app::TestApp;
+
 #[tokio::test]
 async fn chat_works() {
     let docker = clients::Cli::default();
-    let redis_container = docker.run(testcontainers::images::redis::Redis);
-    let redis_port = redis_container.get_host_port_ipv4(6379);
+    let test_app = TestApp::spawn_app(&docker).await;
 
-    let pg_container = docker.run(testcontainers::images::postgres::Postgres::default());
-    let pg_port = pg_container.get_host_port_ipv4(5432);
-    let database_url = format!("postgresql://localhost:{pg_port}/vop_rust");
-
-    let addr = spawn_app::spawn_app(redis_port, database_url).await;
+    let addr = test_app.addr;
 
     let (mut socket_advisor, _response) =
         tokio_tungstenite::connect_async(format!("ws://{addr}/websocket/advisor/customer"))

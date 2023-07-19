@@ -19,6 +19,10 @@ pub async fn run(redis_port: u16, database_url: String) -> axum::Router {
         .connect(&database_url).await
         .expect("Unable to connect to the database");
 
+    let migrator = sqlx::migrate!();
+
+    migrator.run(&pool).await.expect("DB migrations unable to run");
+
     let app_state =
         AppState::new(
             RedisWrapper::new(client),
