@@ -1,5 +1,5 @@
 -- Your SQL goes here
-CREATE TABLE chat (
+CREATE TABLE if not exists chat (
   id uuid not null,
   sender varchar(200) not null,
   receiver varchar(200) not null,

@@ -2368,6 +2368,7 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "dotenvy",
  "fmt",
  "futures",
  "hyper",

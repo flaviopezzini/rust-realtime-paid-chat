@@ -5,6 +5,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
+
+    dotenvy::dotenv().expect("Unable to start environment variable system");
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -18,7 +21,7 @@ async fn main() {
         .parse::<u16>()
         .expect("Environment variable SERVER_PORT must be a valid number");
 
-    let redis_port = env::var("REDIS_PORT").expect("Environment variable SERVER_PORT not set");
+    let redis_port = env::var("REDIS_PORT").expect("Environment variable REDIS_PORT not set");
     let redis_port = redis_port
             .parse::<u16>()
             .expect("Environment variable REDIS_PORT must be a valid number");
