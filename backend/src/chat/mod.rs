@@ -7,11 +7,12 @@ use axum::{
 };
 use chrono::Utc;
 use futures::{sink::SinkExt, stream::StreamExt};
+use rust_decimal::Decimal;
 use sqlx::{Pool, Postgres};
 
-use std::fmt::Formatter;
+use std::{fmt::Formatter, time::Duration};
 use redis::{RedisError};
-use tokio::sync::broadcast;
+use tokio::{sync::broadcast, time};
 
 use crate::{redis_wrapper::RedisWrapper, chat_repository};
 
@@ -134,17 +135,46 @@ async fn websocket(stream: WebSocket, state: AppState, advisor: String, customer
 
     // This task will receive messages from client and send them to broadcast subscribers.
     let mut recv_task = tokio::spawn(async move {
-        while let Some(Ok(Message::Text(text))) = receiver.next().await {
-            let receiver_value = if advisor != name { advisor.clone() }  else { customer.clone() };
+        //here no messages arrived yet.
+        let mut interval = time::interval(Duration::from_secs(15));
+        let receiver_value = if advisor != name { advisor.clone() }  else { customer.clone() };
+        let mut last_time = Utc::now().naive_utc();
 
-            let _ = chat_repository::save(&state.pool, crate::models::Chat {
-                id: Uuid::new_v4(),
-                sender: name.clone(),
-                receiver: receiver_value,
-                created_date: Utc::now().naive_utc(),
-                content: format!("{}: {}", name, text),
-            }).await;
-            let _ = tx.send(format!("{}: {}", name, text));
+        let cost_per_minute = 100;
+
+        loop {
+            tokio::select! {
+                _ = (interval.tick()) => {
+                    let _ = chat_repository::save(&state.pool, crate::models::Chat {
+                        id: Uuid::new_v4(),
+                        sender: name.clone(),
+                        receiver: receiver_value.clone(),
+                        created_date: Utc::now().naive_utc(),
+                        content: format!("15 seconds ellapsed"),
+                        amount: Decimal::new(cost_per_minute / 4, 2),
+                    }).await;                    
+                },
+                maybe_message = (receiver.next()) => {
+                    if let Some(Ok(Message::Text(text))) = maybe_message {
+            
+                        //let time_ellapsed = Utc::now().naive_utc() - last_time;
+                        //let seconds_ellapsed = "a" + time_ellapsed;
+
+                        let _ = chat_repository::save(&state.pool, crate::models::Chat {
+                            id: Uuid::new_v4(),
+                            sender: name.clone(),
+                            receiver: receiver_value.clone(),
+                            created_date: Utc::now().naive_utc(),
+                            content: format!("{}: {}", name, text),
+                            amount: Decimal::new(200,2),
+                        }).await;
+                        let _ = tx.send(format!("{}: {}", name, text));
+                        println!("Message received {text}");
+                    } else {
+                        break;
+                    }
+                },
+            };
         }
     });
 
